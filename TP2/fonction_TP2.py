@@ -4,6 +4,8 @@ from PIL import Image
 from matplotlib import pyplot as plt
 import numpy as np
 import random as rd
+from fonction_TP1 import *
+
 
 def affiche(im, title=""):
     plt.figure()
@@ -118,17 +120,36 @@ def fft_filter(im, mask=""):
     i_noisy = np.fft.ifft2(i_noisy)
     return np.abs(i_noisy)
 
-im_lena = np.array(Image.open("../Images_TP/Lena.jpg"))
-im_noise = np.array(Image.open("../Images_TP/noise.tif"))
-im_clown = np.array(Image.open("../Images_TP/clown.tif"))
+def fusion(im, drapeau):
+    drapeau = drapeau.resize(im.size)
 
-im_noisy_lena = np.array(Image.open("../Images_TP/noisy_Lena.png"))
+    np_eiffel = np.array(im).astype(int)
+    np_flag = np.array(drapeau).astype(int)
+
+    new_a = (0.5 * np_flag + 0.5 * np_eiffel).astype(np.uint8)
+    new_im = Image.fromarray(new_a)
+
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 3, 1)
+    plt.imshow(im)
+    plt.title("Image Original")
+
+    plt.subplot(1, 3, 2)
+    plt.imshow(drapeau)
+    plt.title("Drapeau")
+
+    plt.subplot(1, 3, 3)
+    plt.imshow(new_im)
+    plt.title("Fusion")
+    plt.show()
 
 
-#Test ici
+#%% Test ici
 if __name__ == "__main__" :
-    #%% Exercice 1
+    # Exercice 1
     
+    im_lena = np.array(Image.open("../Images_TP/Lena.jpg"))
+
     im_noisy_lena_maison = bruit_sel_1x1(im_lena)
     im_median = []
     im_median.append(filtre_median(im_noisy_lena_maison))
@@ -145,6 +166,9 @@ if __name__ == "__main__" :
 
     #%% Exercice 2
 
+    im_noise = np.array(Image.open("../Images_TP/noise.tif"))
+    im_clown = np.array(Image.open("../Images_TP/clown.tif"))
+
     affiche_gray(im_noise)
     affiche_gray(fft(im_noise, "noise"))
     affiche_gray(fft_filter(im_noise, "noise"))
@@ -155,7 +179,15 @@ if __name__ == "__main__" :
 
     #%% Exercice 3
 
+    im_noisy_lena = np.array(Image.open("../Images_TP/noisy_Lena.png"))
+
     affiche(im_noisy_lena)
     affiche(im_noisy_lena_maison)
 
+    #%% Exercice 4
+    
+    im_tour_eiffel = Image.open("../Images_TP/tour-eiffel.jpg").convert("RGB")
+    im_france = Image.open("../Images_TP/France.png").convert("RGB")
 
+    fusion(im_tour_eiffel, im_france)
+    
