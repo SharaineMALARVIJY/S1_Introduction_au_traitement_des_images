@@ -197,7 +197,7 @@ def border(im, bord = 5):
     return Image.fromarray(new_a)
 
 def rgb(rgb):
-    return np.uint8(round(max(min(rgb, 255), 0), 0))
+    return np.uint8(np.clip(rgb, 0, 255))
     
 def addi_uint(a, b):
     return np.uint8(rgb(int(a)+int(b)))
@@ -257,15 +257,14 @@ def pixeliser(im, ordinal=10):
     plt.imshow(Image.fromarray(new_a))
 
 
-def lisibilité(im):
-    I = np.asarray(im)
+def lisibilité(I):
     x_a, y_a = I.shape[0], I.shape[1]
     I_norm = np.zeros_like(I)
 
     LUT = np.zeros(256)
     for i in range(256):
         I_min = np.min(I)
-        I_max = np.max(I[:-1]) #On ignore le dernier pixel blanc qui gène
+        I_max = 100 #np.max([j for j in I if j<200])
         LUT[i] = rgb(255*( int(i)- int(I_min))/( I_max - I_min ))
 
     for x in range(x_a):
@@ -284,8 +283,8 @@ def lisibilité(im):
     plt.title("Histogramme de aquitain après normalisation")
     plt.hist(I_norm.ravel(), bins=256, color='black')
 
-def lissage(im):
-    a = np.asarray(im)
+
+def lissage(a):
     x_a, y_a = a.shape[0], a.shape[1]
     new_a = np.zeros_like(a)
 
@@ -304,9 +303,7 @@ def lissage(im):
     new_a[:, 0, :]  = a[:, 0, :]
     new_a[:, -1, :] = a[:, -1, :]
 
-    plt.figure()
-    plt.title("lissage")
-    plt.imshow(Image.fromarray(new_a))
+    return new_a
 
 def accentuation(im):
     a = np.asarray(im)

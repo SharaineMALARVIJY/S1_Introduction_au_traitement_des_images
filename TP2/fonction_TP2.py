@@ -4,7 +4,7 @@ from PIL import Image
 from matplotlib import pyplot as plt
 import numpy as np
 import random as rd
-from fonction_TP1 import *
+from fonction_TP1_pour_TP2 import *
 
 
 def affiche(im, title=""):
@@ -179,10 +179,14 @@ if __name__ == "__main__" :
 
     #%% Exercice 3
 
-    im_noisy_lena = np.array(Image.open("../Images_TP/noisy_Lena.png"))
-
-    affiche(im_noisy_lena)
-    affiche(im_noisy_lena_maison)
+    im_noisy_lena = np.array(Image.open("../Images_TP/noisy_Lena.png").convert("RGB"))
+    im_mercury = np.array(Image.open("../Images_TP/mercury.tif"))
+    
+    
+    affiche(im_mercury)
+    mercury_median = filtre_median(im_mercury)
+    affiche(mercury_median)
+    lisibilité(mercury_median)
 
     #%% Exercice 4
     
