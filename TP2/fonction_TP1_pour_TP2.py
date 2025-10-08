@@ -40,23 +40,6 @@ def convertion_negatif(im):
     return Image.fromarray(n_a)
 
 
-def greyscale(im, graph=True):
-    a = np.asarray(im)
-    x_a = a.shape[0]
-    y_a = a.shape[1]
-    new_a = np.zeros((x_a, y_a), dtype = 'uint8')
-
-    for i in range(x_a):
-        for j in range(y_a):
-            grey = (.299*a[i][j][0] + .587*a[i][j][1] + .114*a[i][j][2])
-            new_a[i][j] = np.array(grey)
-
-    if graph:
-        plt.figure()
-        plt.title("greyscale")
-        plt.imshow(Image.fromarray(new_a), 'grey')
-    return Image.fromarray(new_a)
-
 
 def max_255(rgb):
     if rgb > 255 :
@@ -107,32 +90,6 @@ def contrast(im):
     plt.title("contrast")
     plt.imshow(Image.fromarray(new_a))
 
-def seuillage(im):
-    grey_img = greyscale(im, graph=False)
-    grey_img = np.asarray(grey_img)
-    
-    seuil_otsu = threshold_otsu(grey_img)
-    im_otsu = (grey_img >= seuil_otsu) * 255
-
-    block_size = 269 # taille du voisinage 
-    local_thresh = threshold_local(grey_img, block_size, offset=10) 
-    im_adapt = (grey_img >= local_thresh) * 255
-    
-    plt.figure()
-    plt.title("Seuillage - Otsu")
-    plt.imshow(im_otsu, cmap="gray")
-    plt.show()
-
-    plt.figure()
-    plt.title("Histogramme niveaux de gris")
-    plt.hist(grey_img.ravel(), bins=256, color='black')
-    plt.axvline(seuil_otsu, color='red', linestyle='--', label=f"Otsu: {seuil_otsu:.2f}")
-    plt.legend()
-
-    plt.figure() 
-    plt.title("Seuillage local") 
-    plt.imshow(im_adapt, cmap="gray") 
-    plt.show()
     
 
 def seuillage_couleur(im):
@@ -235,75 +192,12 @@ def relief(im, bord = 10):
     return Image.fromarray(new_a)
 
 
-def pixeliser(im, ordinal=10):
-    a = np.asarray(im)
-    x_a, y_a = a.shape[0], a.shape[1]
-    new_a = np.zeros_like(a)
-
-    for x in range(0, x_a, ordinal):
-        for y in range(0, y_a, ordinal):
-            x_end = min(x + ordinal, x_a)
-            y_end = min(y + ordinal, y_a)
-
-            mR = np.mean(a[x:x_end, y:y_end, 0])
-            mG = np.mean(a[x:x_end, y:y_end, 1])
-            mB = np.mean(a[x:x_end, y:y_end, 2])
-            mA = np.mean(a[x:x_end, y:y_end, 3])
-
-            new_a[x:x_end, y:y_end] = np.array([mR, mG, mB, mA])
-
-    plt.figure()
-    plt.title("pixeliser")
-    plt.imshow(Image.fromarray(new_a))
 
 
-def lisibilité(I):
-    x_a, y_a = I.shape[0], I.shape[1]
-    I_norm = np.zeros_like(I)
-
-    LUT = np.zeros(256)
-    for i in range(256):
-        I_min = np.min(I)
-        I_max = 100 #np.max([j for j in I if j<200])
-        LUT[i] = rgb(255*( int(i)- int(I_min))/( I_max - I_min ))
-
-    for x in range(x_a):
-        for y in range(y_a):
-            I_norm[x, y] = rgb(LUT[I[x,y]])
-    
-    plt.figure()
-    plt.title("Histogramme de aquitain")
-    plt.hist(I.ravel(), bins=256, color='black')
-
-    plt.figure()
-    plt.title("Image aquitain après normalisation")
-    plt.imshow(Image.fromarray(I_norm), 'grey')
-
-    plt.figure()
-    plt.title("Histogramme de aquitain après normalisation")
-    plt.hist(I_norm.ravel(), bins=256, color='black')
 
 
-def lissage(a):
-    x_a, y_a = a.shape[0], a.shape[1]
-    new_a = np.zeros_like(a)
 
-    for x in range(1, x_a-1):
-        for y in range(1, y_a-1):
-            
-            mR = np.mean(a[x-1:x+2, y-1:y+2, 0])
-            mG = np.mean(a[x-1:x+2, y-1:y+2, 1])
-            mB = np.mean(a[x-1:x+2, y-1:y+2, 2])
 
-            new_a[x, y] = np.array([mR, mG, mB])
-
-    #On copie les bords de l'image original
-    new_a[0, :, :]  = a[0, :, :]
-    new_a[-1, :, :] = a[-1, :, :]
-    new_a[:, 0, :]  = a[:, 0, :]
-    new_a[:, -1, :] = a[:, -1, :]
-
-    return new_a
 
 def accentuation(im):
     a = np.asarray(im)
