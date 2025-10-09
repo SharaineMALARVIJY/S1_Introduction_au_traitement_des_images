@@ -18,6 +18,7 @@ def affiche_gray(im, title=""):
     plt.imshow(im, cmap="gray")
 
 def convolution(im, filtre=[1,1,1,1,1,1,1,1,1]):
+    """Bonne base pour les autres code mais pas utiliser au final"""
     a = np.asarray(im)
     x_a, y_a = a.shape[1], a.shape[0]
     new_a = np.zeros_like(a)
@@ -54,6 +55,7 @@ def bruit_sel_1x1(a, taux_sel=0.15):
     return new_a
 
 def bruit_sel_2x2(a, taux_sel=0.05):
+    """J'ai essayer de reproduire le bruit de noisy_Lena.png mais ça servait à rien"""
     x_a, y_a = a.shape[1], a.shape[0]
     new_a = np.zeros_like(a)
 
@@ -145,7 +147,8 @@ def fusion(im, drapeau):
     plt.title("Fusion")
     plt.show()
 
-## Fonction modifier du TP1 ##############################################
+## Fonction modifier du TP1 ##############################################################
+# Quelques fonction ne sont pas utiliser car pas assez performant sur le débruitage des images
 def clip_int8(rgb):
     return np.uint8(np.clip(rgb, 0, 255))
 
@@ -207,6 +210,26 @@ def lissage(a):
             mR = np.mean(a[x-1:x+2, y-1:y+2, 0])
             mG = np.mean(a[x-1:x+2, y-1:y+2, 1])
             mB = np.mean(a[x-1:x+2, y-1:y+2, 2])
+
+            new_a[x, y] = np.array([mR, mG, mB])
+
+    #On copie les bords de l'image original
+    new_a[0, :, :]  = a[0, :, :]
+    new_a[-1, :, :] = a[-1, :, :]
+    new_a[:, 0, :]  = a[:, 0, :]
+    new_a[:, -1, :] = a[:, -1, :]
+
+    return new_a
+
+def lissage_gros(a, fenetre= 3):
+    x_a, y_a = a.shape[0], a.shape[1]
+    new_a = np.zeros_like(a)
+
+    for x in range(1, x_a-1):
+        for y in range(1, y_a-1):
+            mR = np.mean(a[x-fenetre:x+1+fenetre, y-fenetre:y+fenetre+1, 0])
+            mG = np.mean(a[x-fenetre:x+1+fenetre, y-fenetre:y+1+fenetre, 1])
+            mB = np.mean(a[x-fenetre:x+1+fenetre, y-fenetre:y+1+fenetre, 2])
 
             new_a[x, y] = np.array([mR, mG, mB])
 
@@ -397,6 +420,29 @@ def dilatation(a, forme=True):
                 else:
                     new_a[y, x] = 255
     return new_a
+
+
+def calcul_LUT(rgb, m):
+    if rgb > 210 :
+        return m
+    return rgb
+
+def LUT_personaliser(a):
+    x_a = a.shape[0]
+    y_a = a.shape[1]
+    new_a = np.zeros_like(a)
+    r = np.mean(a[..., 0])
+    g = np.mean(a[..., 1])
+    b = np.mean(a[..., 2])
+    for i in range(x_a):
+        for j in range(y_a):
+            outR = calcul_LUT(a[i][j][0], r)
+            outG = calcul_LUT(a[i][j][1], g)
+            outB = calcul_LUT(a[i][j][2], b)
+            new_a[i][j] = np.array((outR, outG, outB))
+    return new_a
+    
+
 #%% Test ici
 if __name__ == "__main__" :
     # Exercice 1
@@ -479,7 +525,7 @@ if __name__ == "__main__" :
     im_texte_a_restaurer = np.array(Image.open("../Images_TP/texte_a_restaurer.png").convert("RGB"))
 
     affiche(im_texte_a_restaurer)
-
+    
     im_texte_a_restaurer = seuillage(im_texte_a_restaurer)
     affiche_gray(im_texte_a_restaurer, "seuillage")
 
@@ -493,7 +539,13 @@ if __name__ == "__main__" :
 
     affiche(im_photo_a_restaurer)
 
-    
-    im_photo_a_restaurer = contrast(im_photo_a_restaurer)
-    affiche(im_photo_a_restaurer, "contrast")
+    im_photo_a_restaurer = LUT_personaliser(im_photo_a_restaurer)
+    affiche(im_photo_a_restaurer, "LUT personaliser")
+
+    im_photo_a_restaurer = lissage_gros(im_photo_a_restaurer, 6)
+    affiche(im_photo_a_restaurer, "lissage_gros")
+
+    # im_photo_a_restaurer = accentuation(im_photo_a_restaurer)
+    # affiche(im_photo_a_restaurer, "accentuation")
+
     
