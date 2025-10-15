@@ -168,21 +168,7 @@ def normalisation(I, max=255):
     return I_norm
 
 
-def greyscale(a, graph=True):
-    x_a = a.shape[0]
-    y_a = a.shape[1]
-    new_a = np.zeros((x_a, y_a), dtype = 'uint8')
 
-    for i in range(x_a):
-        for j in range(y_a):
-            grey = (.299*a[i][j][0] + .587*a[i][j][1] + .114*a[i][j][2])
-            new_a[i][j] = np.array(grey)
-
-    if graph:
-        plt.figure()
-        plt.title("greyscale")
-        plt.imshow(Image.fromarray(new_a), 'grey')
-    return new_a
 
 def pixeliser(a, ordinal=2):
     x_a, y_a = a.shape[0], a.shape[1]
