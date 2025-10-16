@@ -33,7 +33,7 @@ def convolution(im, filtre=[1,1,1,1,1,1,1,1,1]):
         for x in range(1, x_a-1):
                 matrice = ([a[y-1, x-1], a[y-1, x], a[y-1, x+1],
                             a[y, x-1], a[y, x], a[y, x+1],
-                            a[y+1, x-1], a[y, x+1], a[y+1, x+1]])
+                            a[y+1, x-1], a[y+1, x], a[y+1, x+1]])
                 for i in range(len(matrice)):    
                     val += matrice[i]*filtre[i]
                 new_a[y, x] = val
