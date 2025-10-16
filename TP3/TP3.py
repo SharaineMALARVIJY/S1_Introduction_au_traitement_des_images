@@ -60,7 +60,7 @@ if __name__ == "__main__" :
 
     #%% Exercice 3
 
-    im_resize = np.array(Image.open("../Images_TP/Resize.png"))
+    im_resize = np.array(Image.open("../Images_TP/Resize.png").convert("RGB"))
     im_resize_gray = np.array(Image.open("../Images_TP/Resize.png").convert("L"))
 
     affiche(im_resize)
@@ -71,32 +71,73 @@ if __name__ == "__main__" :
     
 
     def resizing(a):
-        x_a, y_a = a.shape[1], a.shape[0]
+        x_max, y_max = a.shape[1], a.shape[0]
         new_a = np.zeros_like(a)
         path = []
 
         grad = filters.sobel(a)
 
         x_start = np.argmin(grad[0, :]) 
-        next_point = [0, x_start]   #premier point
+        next_point = [[0, x_start]]  #premier point
 
-        for i in range(x_a):
-                y, x = next_point[i, 0], next_point[i, 1]
+        for i in range(y_max-1):  
+            y, x = next_point[i][0], next_point[i][1]
 
-                voisin_bas = ([grad[y+1, x-1], grad[y, x+1], grad[y+1, x+1]])
-                voisin_min = np.argmin(voisin_bas)
-                if voisin_min==0 :
-                    path.append([y+1, x-1])
-                elif voisin_min==1:
-                    path.append([y, x+1])
-                else : #voisin_min==2
-                    path.append([y+1, x+1])
+            if x == 0:
+                voisin_bas = ([grad[y+1, x], 266, grad[y+1, x+1]])
+            elif x == x_max:
+                voisin_bas = ([grad[y+1, x], grad[y+1, x-1], 256])
+            else:
+                voisin_bas = ([grad[y+1, x], grad[y+1, x-1], grad[y+1, x+1]])
 
-                next_point.append(path[-1])
+            voisin_min = np.argmin(voisin_bas)
+            if voisin_min==0 :
+                path.append([y+1, x])
+            elif voisin_min==1:
+                path.append([y+1, x-1])
+            else : #voisin_min==2
+                path.append([y+1, x+1])
+
+            next_point.append(path[-1])
         return path
     
-    im_path = np.zeros_like(im_resize)
-    path = resizing(im_resize_gray)
+
+    def remove_path(image, path):
+        h, w, c = image.shape
+        new_image = np.zeros((h, w-1, c), dtype=image.dtype)
+
+        for y in range(h-1):
+            x = path[y][1]
+            new_image[y] = np.delete(image[y], x, axis=0)
+
+        return new_image
+
+    def affiche_path(im_path, path):
+        im_path_aff= np.copy(im_path)
+        for i in path:
+            im_path_aff[i[0], i[1], :3] = [255, 0, 0]
+        affiche(im_path_aff)
+
+    im_path = np.copy(im_resize)
+    from skimage.color import rgb2gray
+
+    for _ in range(10):
+        path = resizing(rgb2gray(im_path))     
+        affiche_path(im_path, path)
+        im_path = remove_path(im_path, path) # suppression
+
+    affiche(im_path)
+
+    print(len(im_resize[1]))
+    print(len(im_path[1]))
+
+
+
+
+
+
+
+
 
     
 
