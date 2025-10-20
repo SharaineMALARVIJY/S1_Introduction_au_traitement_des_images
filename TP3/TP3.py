@@ -134,3 +134,5 @@ if __name__ == "__main__" :
     print("Axe x après resizing :", len(im_resized[1]))
     
 
+
+# %%
