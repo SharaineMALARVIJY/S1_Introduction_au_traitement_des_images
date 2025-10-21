@@ -1,7 +1,7 @@
 # Sharaine MALARVIJY 21206543
 #%% Fonctions 
 
-from PIL import Image, ImageOps
+from PIL import Image
 from matplotlib import pyplot as plt
 import cv2
 import numpy as np
@@ -98,6 +98,18 @@ def refocus_horizontal(a, a1, a2):
 
 # Fonction exercice 2
 
+def mosaic_images(img_list):
+    """
+    Stitch a list of overlapping images into a single panorama.
+    Uses OpenCV's built-in Stitcher.
+    """
+    stitcher = cv2.Stitcher_create(cv2.Stitcher_SCANS)
+    _, stitched = stitcher.stitch(img_list)
+
+    return stitched
+
+# Fonction exercice 3
+
 
 def remove_path(image, path):
     h, w, c = image.shape
@@ -117,33 +129,40 @@ def affiche_path(im_path, path):
 
 def image_path(a):
     x_max, y_max = a.shape[1], a.shape[0]
-    path = []
-
+    all_paths = []
     grad = filters.sobel(a)
 
-    x_start = np.argmin(grad[0, :]) 
-    next_point = [[0, x_start]]  #premier point
+    for x_start in range(0, x_max, 10): # Pas de 10 pour réduire les calculs
+        path = []
+        next_point = [[0, x_start]]  #premier point
+        path_energy = grad[0, x_start]
+        for i in range(y_max-1):
+            y, x = next_point[i][0], next_point[i][1]
+           
+            if x == 0:
+                voisin_bas = ([grad[y+1, x], 256, grad[y+1, x+1]])
+            elif x == x_max-1:
+                voisin_bas = ([grad[y+1, x], grad[y+1, x-1], 256])
+            else:
+                voisin_bas = ([grad[y+1, x], grad[y+1, x-1], grad[y+1, x+1]])
 
-    for i in range(y_max-1):  
-        y, x = next_point[i][0], next_point[i][1]
+            voisin_min = np.argmin(voisin_bas)
+            if voisin_min==0 :
+                path.append([y+1, x])
+                path_energy += grad[y+1, x]
+            elif voisin_min==1:
+                path.append([y+1, x-1])
+                path_energy += grad[y+1, x-1]
+            else : #voisin_min==2
+                path.append([y+1, x+1])
+                path_energy += grad[y+1, x+1]
 
-        if x == 0:
-            voisin_bas = ([grad[y+1, x], 256, grad[y+1, x+1]])
-        elif x == x_max-1:
-            voisin_bas = ([grad[y+1, x], grad[y+1, x-1], 256])
-        else:
-            voisin_bas = ([grad[y+1, x], grad[y+1, x-1], grad[y+1, x+1]])
+            next_point.append(path[-1])
 
-        voisin_min = np.argmin(voisin_bas)
-        if voisin_min==0 :
-            path.append([y+1, x])
-        elif voisin_min==1:
-            path.append([y+1, x-1])
-        else : #voisin_min==2
-            path.append([y+1, x+1])
-
-        next_point.append(path[-1])
-    return path
+        all_paths.append((path, path_energy))
+    
+    min_path = min(all_paths, key=lambda p: p[1])[0]
+    return min_path
 
 def resizing(im, nb_colonne_retirer = 10, aff_path=False):
     im_path = np.copy(im)
@@ -154,6 +173,34 @@ def resizing(im, nb_colonne_retirer = 10, aff_path=False):
         im_path = remove_path(im_path, path)
 
     return im_path
+
+# Fonction exercice 4
+
+def blur_region(image, x_start, x_end, y_start, y_end, sigma=5):
+    blurred_image = image.copy()
+    region = image[y_start:y_end, x_start:x_end]
+    blurred_region = filters.gaussian(region, sigma=sigma, channel_axis=-1)
+
+    blurred_region = clip_int8(blurred_region * 255)
+    
+    blurred_image[y_start:y_end, x_start:x_end] = blurred_region
+    return blurred_image 
+
+# Fonction exercice 5
+def focus_tour_eiffel(im):
+    zones = [
+    (0, 150, 10),   # (x_start, x_end, sigma)
+    (150, 340, 5),
+    (450, -150, 5),  
+    (-150, -1, 10),
+    ]
+
+    new_im = im.copy()
+
+    for x_start, x_end, sigma in zones:
+        blurred_zone = blur_region(im, x_start=x_start, x_end=x_end, y_start=0, y_end=-1, sigma=sigma)
+        new_im[:, x_start:x_end] = blurred_zone[:, x_start:x_end]
+    return new_im
 
 #%% Test ici
 if __name__ == "__main__" :
@@ -203,11 +250,15 @@ if __name__ == "__main__" :
     #%% Exercice 2
 
 
-    im_mosaic_1 = np.array(Image.open("../Images_TP/Mosaic_1.png"))
-    im_mosaic_2 = np.array(Image.open("../Images_TP/Mosaic_2.png"))
-    
+    im_mosaic_1 = np.array(Image.open("../Images_TP/Mosaic_1.png").convert("RGB"))
+    im_mosaic_2 = np.array(Image.open("../Images_TP/Mosaic_2.png").convert("RGB"))
+
     affiche(im_mosaic_1)
     affiche(im_mosaic_2)
+
+    stitched = mosaic_images([im_mosaic_1, im_mosaic_2])
+
+    affiche(stitched, title="Mosaïque panoramique (stitching)")
 
 
 
@@ -224,7 +275,7 @@ if __name__ == "__main__" :
     plt.imshow(grad, cmap="hot")
     
 
-    im_resized = resizing(im_resize, nb_colonne_retirer = 150)
+    im_resized = resizing(im_resize, nb_colonne_retirer = 130, aff_path=False)
     affiche(im_resized, "Après resizing")
     print("Axe x avant resizing :", len(im_resize[1]))
     print("Axe x après resizing :", len(im_resized[1]))
@@ -235,8 +286,28 @@ if __name__ == "__main__" :
 
     im_profondeur = np.array(Image.open("../Images_TP/Profondeur.png").convert("RGB"))
 
-    grad = np.abs(filters.laplace((im_profondeur)))
+    grad = np.abs(filters.laplace((im_profondeur))) 
 
-    affiche(im_profondeur)
+    new_im = blur_region(im_profondeur, x_start=0, x_end=300, y_start=0, y_end=-1, sigma=5)
+    new_im = blur_region(im_profondeur, x_start=0, x_end=400, y_start=0, y_end=-1, sigma=5)
+    new_im = blur_region(new_im, x_start=400, x_end=500, y_start=0, y_end=250, sigma=5)
     
+
+    # Display results
+    plt.figure(figsize=(10,5))
+    plt.subplot(1,2,1)
+    plt.title("Original")
+    plt.imshow(im_profondeur)
+    plt.subplot(1,2,2)
+    plt.title("Flou de profondeur")
+    plt.imshow(new_im)
+    plt.show()
+
+    #%% Exercice 5 
+
+    im_tour_eiffel = np.array(Image.open("../Images_TP/tour-eiffel.jpg").convert("RGB"))
+
+    affiche(im_tour_eiffel)
+
+    affiche(focus_tour_eiffel(im_tour_eiffel))
 
