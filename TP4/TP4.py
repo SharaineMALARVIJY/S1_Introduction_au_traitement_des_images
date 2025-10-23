@@ -1,10 +1,11 @@
 # Sharaine MALARVIJY 21206543
 #%% Fonctions 
-from PIL import Image, ImageOps
+from PIL import Image
 from matplotlib import pyplot as plt
 import numpy as np
 from skimage import filters
 from skimage.color import rgb2gray
+from skimage.measure import perimeter, label, regionprops
 import time 
 
 def affiche(im, title=""):
@@ -126,6 +127,38 @@ if __name__ == "__main__" :
     t1 = time.time()
     t2 = time.time()
     print(f"{t2-t1:.2f}s de calcul")
+
+
+    #%% Exercice 3 
+    im_piece= np.array(Image.open("../Images_TP/piece.tif").convert("L"))
+    threshold = filters.threshold_otsu(im_piece)
+    im_piece_rond = im_piece > threshold
+    im_piece = im_piece < threshold
+    affiche_gray(im_piece, "Image avec seuillage")
+
+    label_im_piece_rond =  label(im_piece_rond, connectivity=im_piece.ndim)
+    label_im_piece = label(im_piece, connectivity=im_piece.ndim)
+
+    objet = regionprops(label_im_piece)[0]
+    grand_rond = regionprops(label_im_piece_rond)[1]
+    petit_rond = regionprops(label_im_piece_rond)[2]
+
+    new_a = np.zeros_like(im_piece)
+    y_c, x_c = objet.centroid
+    for y, x in objet.coords:
+        if [y, x]==[y_c, x_c]:
+            new_a = 0
+        else:
+            new_a[y, x] = 255 
+
+    affiche_gray(new_a, "Coordonnée de l'objet") 
+
+    print(f"Aire de l'objet : {objet.area:.0f} pixels")
+    print(f"Longueur de l'objet : {objet.axis_major_length:.0f} pixels")
+    print(f"Largeur de l'objet : {objet.axis_minor_length:.0f} pixels")
+    print(f"Centre de l'objet : x={x_c:.0f}, y={y_c:.0f}")
+
+
 
     #%% Exercice 4
 
