@@ -3,9 +3,9 @@
 from PIL import Image
 from matplotlib import pyplot as plt
 import numpy as np
-from skimage import filters
-from skimage.color import rgb2gray
-from skimage.measure import perimeter, label, regionprops
+from skimage import filters, morphology
+from skimage.color import gray2rgb
+from skimage.measure import label, regionprops
 import time 
 
 def affiche(im, title=""):
@@ -50,6 +50,102 @@ def photomation(a):
 
     return new_a
 
+
+def all_RGB(a):
+    x_a, y_a = a.shape[1], a.shape[0]
+    new_a = np.zeros_like(a)
+    used_pixel = set() 
+    alea = 10
+    for y in range(y_a):
+        for x in range(x_a):
+            pixel = tuple(a[y, x])
+            while pixel in used_pixel:               
+                outR = np.clip(int(pixel[0])+np.random.randint(-alea, alea), 0, 255)
+                outG = np.clip(int(pixel[1])+np.random.randint(-alea, alea), 0, 255)
+                outB = np.clip(int(pixel[2])+np.random.randint(-alea, alea), 0, 255)
+                pixel = (outR, outG, outB)
+            new_a[y, x] = np.array([pixel[0], pixel[1], pixel[2]], dtype=np.uint8)
+            used_pixel.add(pixel)
+    return new_a
+
+def rgb_redondant_vert(a):
+    """Si un pixel est redondant il sera remplacer par un pixel vert"""
+    x_a, y_a = a.shape[1], a.shape[0]
+    new_a = np.zeros_like(a)
+    used_pixel = set()  
+    doublon = False
+
+    for y in range(y_a):
+        for x in range(x_a):
+            pixel = tuple(a[y, x]) 
+
+            if pixel not in used_pixel:
+                new_a[y, x] = a[y, x]   
+                used_pixel.add(pixel)  
+            else:
+                doublon = True
+                new_a[y, x] = np.array([0, 255, 0], dtype=np.uint8)
+
+    return new_a, doublon
+
+def affiche_objet(im, coord, couleur="No color"):
+    if couleur == "No color":
+        new_a = np.zeros_like(im)
+        for y, x in coord:
+            new_a[y, x] = 255
+        affiche_gray(new_a, "Coordonnée de l'objet")
+
+    else:
+        shape = np.shape(im)
+        new_a = np.zeros((shape[0], shape[1], 3), dtype=np.uint8)
+        for y, x in coord:
+            if couleur == "R":
+                new_a[y, x] = [255, 0, 0]
+            elif couleur == "G":
+                new_a[y, x] = [0, 255, 0]
+            elif couleur == "B":
+                new_a[y, x] = [0, 0, 255]
+    return new_a  
+
+def classification_piece(im_rondeldent):
+    threshold = filters.threshold_otsu(im_rondeldent)
+    im_rondeldent = im_rondeldent < threshold
+    im_rondeldent = morphology.remove_small_objects(im_rondeldent, 50)
+
+    affiche_gray(im_rondeldent)
+
+    label_im_rondeldent =  label(im_rondeldent, connectivity=im_rondeldent.ndim)
+    rondeldent = regionprops(label_im_rondeldent)
+
+
+    shape = np.shape(im_rondeldent)
+    resultat = np.zeros((shape[0], shape[1], 3), dtype=np.uint8)
+
+    nb_rondelles = 0
+    nb_roues = 0
+    nb_parasites = 0
+
+    for obj in rondeldent:
+        if obj.eccentricity > 0.7:         # Parasite
+            nb_parasites += 1
+            resultat += affiche_objet(im_rondeldent, obj.coords, "R")
+        elif obj.solidity > 0.9:          # Rondelle 
+            nb_rondelles += 1
+            resultat += affiche_objet(im_rondeldent, obj.coords, "G")
+        elif obj.solidity > 0.80:          # Roue dentée 
+            nb_roues += 1
+            resultat += affiche_objet(im_rondeldent, obj.coords, "B")
+        else:
+            nb_parasites += 1              # Parasite
+            resultat += affiche_objet(im_rondeldent, obj.coords, "R")
+
+
+    print(f"Nombre d'objet total : {len(rondeldent)}")
+    print(f"Rondelles      : {nb_rondelles}")
+    print(f"Roues dentées  : {nb_roues}")
+    print(f"Objets random  : {nb_parasites}")
+    affiche(resultat)
+
 #%% Test ici
 if __name__ == "__main__" :
     # Exercice 1
@@ -75,43 +171,6 @@ if __name__ == "__main__" :
 
     affiche(im_lena, "Image original")
 
-    def all_RGB(a):
-        x_a, y_a = a.shape[1], a.shape[0]
-        new_a = np.zeros_like(a)
-        used_pixel = set() 
-        alea = 10
-        for y in range(y_a):
-            for x in range(x_a):
-                pixel = tuple(a[y, x])
-                while pixel in used_pixel:               
-                    outR = np.clip(int(pixel[0])+np.random.randint(-alea, alea), 0, 255)
-                    outG = np.clip(int(pixel[1])+np.random.randint(-alea, alea), 0, 255)
-                    outB = np.clip(int(pixel[2])+np.random.randint(-alea, alea), 0, 255)
-                    pixel = (outR, outG, outB)
-                new_a[y, x] = np.array([pixel[0], pixel[1], pixel[2]], dtype=np.uint8)
-                used_pixel.add(pixel)
-        return new_a
-    
-    def rgb_redondant_vert(a):
-        """Si un pixel est redondant il sera remplacer par un pixel vert"""
-        x_a, y_a = a.shape[1], a.shape[0]
-        new_a = np.zeros_like(a)
-        used_pixel = set()  
-        doublon = False
-
-        for y in range(y_a):
-            for x in range(x_a):
-                pixel = tuple(a[y, x]) 
-
-                if pixel not in used_pixel:
-                    new_a[y, x] = a[y, x]   
-                    used_pixel.add(pixel)  
-                else:
-                    doublon = True
-                    new_a[y, x] = np.array([0, 255, 0], dtype=np.uint8)
-
-        return new_a, doublon
-
 
     im_lena_all_rgb = all_RGB(im_lena)
     affiche(im_lena_all_rgb, "Après all rgb")
@@ -123,10 +182,6 @@ if __name__ == "__main__" :
     else:
         affiche(im_lena[330:400, 350:420], "Image original")
         affiche(im_lena_all_rgb[330:400, 350:420], "Après all rgb")
-
-    t1 = time.time()
-    t2 = time.time()
-    print(f"{t2-t1:.2f}s de calcul")
 
 
     #%% Exercice 3 
@@ -143,15 +198,9 @@ if __name__ == "__main__" :
     grand_rond = regionprops(label_im_piece_rond)[1]
     petit_rond = regionprops(label_im_piece_rond)[2]
 
-    new_a = np.zeros_like(im_piece)
     y_c, x_c = objet.centroid
-    for y, x in objet.coords:
-        if [y, x]==[y_c, x_c]:
-            new_a = 0
-        else:
-            new_a[y, x] = 255 
 
-    affiche_gray(new_a, "Coordonnée de l'objet") 
+    affiche_objet(im_piece, objet.coords)
 
     print(f"Aire de l'objet : {objet.area:.0f} pixels")
     print(f"Longueur de l'objet : {objet.axis_major_length:.0f} pixels")
@@ -162,7 +211,12 @@ if __name__ == "__main__" :
 
     #%% Exercice 4
 
-    # segmentation
-    # region proc simal ?
+    im_rondeldent = np.array(Image.open("../Images_TP/rondeldent.tif").convert("L"))
+    im_rondeldent1 = np.array(Image.open("../Images_TP/rondeldent1.tif").convert("L"))
+    im_rondeldent2 = np.array(Image.open("../Images_TP/rondeldent2.tif").convert("L"))
+
+    classification_piece(im_rondeldent)
+    classification_piece(im_rondeldent1)
+    classification_piece(im_rondeldent2)
 
     
